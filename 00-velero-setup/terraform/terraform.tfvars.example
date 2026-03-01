@@ -1,0 +1,9 @@
+region           = "eu-west-1"
+bucket_name      = "velero-backups-epi"
+eks_cluster_name = "epi"
+velero_namespace = "velero"
+
+tags = {
+  Project   = "epi-backup"
+  ManagedBy = "terraform"
+}

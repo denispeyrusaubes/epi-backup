@@ -1,0 +1,17 @@
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.claude/
+*.tgz
+charts/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl

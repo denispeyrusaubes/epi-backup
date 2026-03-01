@@ -1,0 +1,6 @@
+namespace: pra-test
+
+storageClass: ""
+
+# Applications à déployer (à définir)
+# Ajouter ici les paramètres des applications choisies pour le test PRA

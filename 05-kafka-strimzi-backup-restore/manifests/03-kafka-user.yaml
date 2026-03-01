@@ -1,0 +1,30 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: test-user
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: epi-kafka-cluster
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: test-backup
+          patternType: literal
+        operations:
+          - Read
+          - Write
+          - Describe
+          - DescribeConfigs
+          - Create
+      - resource:
+          type: group
+          name: test-group
+          patternType: literal
+        operations:
+          - Read
+          - Describe

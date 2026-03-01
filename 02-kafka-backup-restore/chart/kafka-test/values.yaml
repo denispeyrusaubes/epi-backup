@@ -1,0 +1,12 @@
+namespace: kafka-test
+
+storageClass: ""
+
+kafka:
+  image: apache/kafka
+  tag: "3.7.0"
+  clusterId: "MkU3OEVBNTcwNTJENDM2Qk"
+  replicas: 3
+
+persistence:
+  size: 2Gi

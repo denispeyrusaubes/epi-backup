@@ -1,0 +1,10 @@
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: kafka-backup
+  namespace: velero
+spec:
+  includedNamespaces:
+    - kafka-test
+  storageLocation: default
+  ttl: 720h0m0s

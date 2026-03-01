@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-kafka
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Release.Name }}-kafka
+spec:
+  serviceName: {{ .Release.Name }}-kafka
+  replicas: {{ .Values.kafka.replicas }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-kafka
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-kafka
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: kafka-init
+          image: {{ .Values.kafka.image }}:{{ .Values.kafka.tag }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          command:
+            - bash
+            - -c
+            - |
+              # Extraire l'ordinal du hostname (ex: kafka-test-kafka-0 -> 0)
+              ORDINAL=${HOSTNAME##*-}
+              echo "Node ID: ${ORDINAL}"
+
+              # Générer la config à partir du template
+              sed \
+                -e "s/NODE_ID_PLACEHOLDER/${ORDINAL}/" \
+                -e "s/ADVERTISED_LISTENERS_PLACEHOLDER/${HOSTNAME}.{{ .Release.Name }}-kafka.{{ .Values.namespace }}.svc.cluster.local:9092/" \
+                /etc/kafka-config/server.properties.template > /opt/kafka-config/server.properties
+
+              echo "Config générée :"
+              cat /opt/kafka-config/server.properties
+
+              # Créer le sous-répertoire kraft-logs
+              mkdir -p /var/lib/kafka/data/kraft-logs
+
+              # Formater le stockage KRaft si pas déjà fait
+              if [ ! -f /var/lib/kafka/data/kraft-logs/meta.properties ]; then
+                echo "Formatage du stockage KRaft..."
+                /opt/kafka/bin/kafka-storage.sh format \
+                  -t {{ .Values.kafka.clusterId }} \
+                  -c /opt/kafka-config/server.properties
+              else
+                echo "Stockage KRaft déjà formaté, skip."
+              fi
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+            - name: kafka-config
+              mountPath: /etc/kafka-config
+            - name: kafka-config-writable
+              mountPath: /opt/kafka-config
+      containers:
+        - name: kafka
+          image: {{ .Values.kafka.image }}:{{ .Values.kafka.tag }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          command:
+            - /opt/kafka/bin/kafka-server-start.sh
+            - /opt/kafka-config/server.properties
+          ports:
+            - containerPort: 9092
+              name: plaintext
+            - containerPort: 9093
+              name: controller
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+            - name: kafka-config-writable
+              mountPath: /opt/kafka-config
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 5
+      volumes:
+        - name: kafka-config
+          configMap:
+            name: {{ .Release.Name }}-kafka-config
+        - name: kafka-config-writable
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.storageClass }}
+        storageClassName: {{ .Values.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

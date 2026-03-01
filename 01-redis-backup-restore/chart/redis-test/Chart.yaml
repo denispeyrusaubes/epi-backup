@@ -1,0 +1,5 @@
+apiVersion: v2
+name: redis-test
+description: Redis de test pour validation backup/restore Velero
+version: 0.1.0
+appVersion: "7.2"

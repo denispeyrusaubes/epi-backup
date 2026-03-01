@@ -1,0 +1,10 @@
+namespace: redis-test
+
+storageClass: ""
+
+redis:
+  image: redis
+  tag: "7.2-alpine"
+
+persistence:
+  size: 1Gi
