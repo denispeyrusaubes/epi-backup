@@ -72,10 +72,10 @@ for i in $(seq 1 "${NB_MESSAGES}"); do
   expected="message-${i}"
   if echo "${MESSAGES}" | grep -qF "${expected}"; then
     echo "  [PASS] ${expected}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  [FAIL] ${expected} : non trouvé"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 done
 

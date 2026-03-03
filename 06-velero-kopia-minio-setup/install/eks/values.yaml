@@ -1,0 +1,93 @@
+# =============================================================================
+# Velero Helm values — Kopia + AWS S3 (EKS) — VGDP (Generic Data Path)
+# Chart : vmware-tanzu/velero
+# =============================================================================
+
+image:
+  repository: velero/velero
+  tag: v1.17.1
+  pullPolicy: IfNotPresent
+
+# Plugin AWS S3
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+# -----------------------------------------------------------------------------
+# Configuration principale
+# -----------------------------------------------------------------------------
+configuration:
+  # Kopia comme moteur de transfert des données (VGDP data mover)
+  uploaderType: kopia
+
+  # Désactiver le file-system backup (ancienne approche PodVolumeBackup/Restore)
+  # Les PVCs sont sauvegardés via CSI VolumeSnapshot + data mover (VGDP)
+  defaultVolumesToFsBackup: false
+
+  # BackupStorageLocation — AWS S3
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero-backups-epi
+      credential:
+        name: velero-credentials
+        key: cloud
+      default: true
+      config:
+        region: eu-west-1
+
+  # VGDP utilise les CSI VolumeSnapshots (EBS CSI driver via IRSA).
+  # Aucun VolumeSnapshotLocation AWS nécessaire.
+  volumeSnapshotLocation: []
+
+  # Activer le plugin CSI de Velero (requis pour VGDP avec snapshotMoveData)
+  features: EnableCSI
+
+# Utiliser le secret créé par install.sh
+credentials:
+  useSecret: true
+  existingSecret: velero-credentials
+
+# -----------------------------------------------------------------------------
+# Node-agent (DaemonSet) — OBLIGATOIRE pour VGDP (transfert Kopia vers S3)
+# -----------------------------------------------------------------------------
+deployNodeAgent: true
+
+nodeAgent:
+  podVolumePath: /var/lib/kubelet/pods
+  privileged: false
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+# -----------------------------------------------------------------------------
+# Velero deployment
+# -----------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: 500m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+# Désactiver le job bitnami/kubectl pour l'upgrade CRDs (tag inexistant)
+upgradeCRDs: false
+

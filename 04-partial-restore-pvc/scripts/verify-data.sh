@@ -29,10 +29,10 @@ for entry in "${EXPECTED[@]}"; do
 
   if [ "${actual}" = "${expected}" ]; then
     echo "  [PASS] ${key} = ${actual}"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  [FAIL] ${key} : attendu '${expected}', obtenu '${actual}'"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 done
 
@@ -40,10 +40,10 @@ done
 backup_date=$(kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- redis-cli GET "test:backup-date" 2>/dev/null || echo "")
 if [ -n "${backup_date}" ]; then
   echo "  [PASS] test:backup-date = ${backup_date}"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  [FAIL] test:backup-date : clé absente"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 echo ""

@@ -27,7 +27,7 @@ for entry in "${KEYS[@]}"; do
   value="${entry#*=}"
   kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- redis-cli SET "${key}" "${value}"
   echo "  SET ${key} = ${value}"
-  ((COUNT++))
+  COUNT=$((COUNT + 1))
 done
 
 echo ""

@@ -1,0 +1,106 @@
+# =============================================================================
+# Velero Helm values — Kopia + MinIO (Tanzu/vSphere) — VGDP (Generic Data Path)
+# Chart : vmware-tanzu/velero  v11.4.0  →  Velero 1.17.1
+# =============================================================================
+# PRÉREQUIS CÔTÉ CLUSTER (à faire avant helm install) :
+#   1. CSI driver vSphere actif (csi.vsphere.volume) avec support VolumeSnapshot
+#   2. VolumeSnapshotClass annotée :
+#        velero.io/csi-volumesnapshot-class: "true"
+#        deletionPolicy: Retain
+#   3. StorageClass utilisant csi.vsphere.volume
+#   4. Namespace velero créé + secret velero-credentials créé (via install.sh)
+# =============================================================================
+
+image:
+  repository: velero/velero
+  tag: v1.17.1
+  pullPolicy: IfNotPresent
+
+# Plugin AWS (protocole S3 — compatible MinIO)
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+# -----------------------------------------------------------------------------
+# Configuration principale
+# -----------------------------------------------------------------------------
+configuration:
+  # Kopia comme moteur de transfert des données (VGDP data mover)
+  uploaderType: kopia
+
+  # Désactiver le file-system backup (ancienne approche PodVolumeBackup/Restore)
+  # Les PVCs sont sauvegardés via CSI VolumeSnapshot + data mover (VGDP)
+  defaultVolumesToFsBackup: false
+
+  # Activer le plugin CSI de Velero (requis pour VGDP avec snapshotMoveData: true)
+  features: EnableCSI
+
+  # BackupStorageLocation — MinIO (protocole S3)
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero-backups
+      credential:
+        name: velero-credentials
+        key: cloud
+      default: true
+      config:
+        region: minio
+        s3ForcePathStyle: "true"
+        s3Url: https://labnousvrminio.d83.tes.local:9000
+        # caCert (base64, chaîne complète) est injecté via --set lors du helm install
+        # pour ne pas le committer en clair dans ce fichier :
+        #   --set "configuration.backupStorageLocation[0].config.caCert=<base64>"
+
+  # VGDP utilise les CSI VolumeSnapshots (vSphere CSI driver).
+  # Aucun VolumeSnapshotLocation AWS/vSphere nécessaire ici —
+  # la création du snapshot EBS/vSAN est déléguée au CSI via la VolumeSnapshotClass.
+  volumeSnapshotLocation: []
+
+# Utiliser le secret créé par install.sh
+credentials:
+  useSecret: true
+  existingSecret: velero-credentials
+
+# -----------------------------------------------------------------------------
+# Node-agent (DaemonSet) — OBLIGATOIRE pour VGDP (transfert Kopia → MinIO)
+# -----------------------------------------------------------------------------
+deployNodeAgent: true
+
+nodeAgent:
+  podVolumePath: /var/lib/kubelet/pods
+  privileged: false
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+# -----------------------------------------------------------------------------
+# Velero deployment
+# -----------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: 500m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+# Désactiver le job bitnami/kubectl pour l'upgrade CRDs (tag inexistant sur Docker Hub)
+upgradeCRDs: false

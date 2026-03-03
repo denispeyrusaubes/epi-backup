@@ -8,6 +8,10 @@
 *.tgz
 charts/
 
+# Credentials (ne jamais committer)
+credentials
+ca.crt
+
 # Terraform
 .terraform/
 *.tfstate

@@ -69,10 +69,10 @@ FAIL=0
 for i in $(seq 1 "${EXPECTED_MESSAGES}"); do
   if echo "${MESSAGES}" | grep -q "message-${i}:"; then
     echo "  [PASS] message-${i} présent"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  [FAIL] message-${i} absent"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 done
 
