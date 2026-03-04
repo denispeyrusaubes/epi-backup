@@ -6,5 +6,6 @@ metadata:
 spec:
   includedNamespaces:
     - redis-test
+  snapshotMoveData: true
   storageLocation: default
   ttl: 720h0m0s

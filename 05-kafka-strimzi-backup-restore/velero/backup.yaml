@@ -6,5 +6,6 @@ metadata:
 spec:
   includedNamespaces:
     - kafka
+  snapshotMoveData: true
   storageLocation: default
   ttl: 720h0m0s
