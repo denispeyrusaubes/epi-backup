@@ -33,9 +33,6 @@ spec:
             - name: default
               provider: aws
               bucket: velero-pra                            # ← Adapter au bucket MinIO
-              # caCert : utilise par Kopia (node-agent) pour valider TLS MinIO
-              # Generer avec : base64 < ca.crt | tr -d '\n'
-              caCert: __CA_CERT_B64__                       # ← Remplacer par le base64 de ca.crt
               credential:
                 name: velero-credentials
                 key: cloud
@@ -44,8 +41,7 @@ spec:
                 region: minio
                 s3ForcePathStyle: "true"
                 s3Url: https://minio.example.com:9000       # ← Adapter a l'URL MinIO
-                # config.caCert : utilise par le plugin AWS pour valider le BSL
-                caCert: __CA_CERT_B64__                     # ← Meme valeur que ci-dessus
+                caCert: __CA_CERT_B64__                     # ← base64 < ca.crt | tr -d '\n'
 
           volumeSnapshotLocation: []
 
@@ -75,9 +71,18 @@ spec:
     server: https://kubernetes.default.svc
     namespace: velero
 
+  # Permettre le patch de spec.objectStorage.caCert sans que selfHeal le reverte
+  # Ce champ est injecte apres sync pour Kopia (node-agent)
+  ignoreDifferences:
+    - group: velero.io
+      kind: BackupStorageLocation
+      jsonPointers:
+        - /spec/objectStorage/caCert
+
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true

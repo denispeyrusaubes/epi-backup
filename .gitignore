@@ -8,6 +8,14 @@
 *.tgz
 charts/
 
+# Python
+*.py
+__pycache__/
+*.pyc
+
+# Word temp files
+~$*.docx
+
 # Credentials (ne jamais committer — utiliser credentials.example comme modèle)
 credentials
 !credentials.example

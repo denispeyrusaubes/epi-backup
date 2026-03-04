@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net" modified="2026-03-05" agent="Claude" version="24.0.0" type="device">
+  <diagram id="backup" name="Flux Backup">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;Flux de backup (snapshotMoveData: true)&lt;/b&gt;" style="text;html=1;fontSize=16;align=center;" vertex="1" parent="1">
+          <mxGeometry x="175" y="20" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Step 1 -->
+        <mxCell id="s1" value="&lt;b&gt;1.&lt;/b&gt; kubectl apply -f backup.yaml" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="70" width="300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Step 2 -->
+        <mxCell id="s2" value="&lt;b&gt;2.&lt;/b&gt; Velero decouvre les PVCs du namespace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="140" width="300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Step 3 -->
+        <mxCell id="s3" value="&lt;b&gt;3.&lt;/b&gt; Creation VolumeSnapshot (CSI)&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;CSI driver vSphere cree un snapshot du disque&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="210" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Step 4 -->
+        <mxCell id="s4" value="&lt;b&gt;4.&lt;/b&gt; Creation objet DataUpload&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;node-agent recoit la tache&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="290" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Step 5 -->
+        <mxCell id="s5" value="&lt;b&gt;5.&lt;/b&gt; PVC temporaire depuis VolumeSnapshotContent&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Volume monte en lecture sur le noeud&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="370" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Step 6 -->
+        <mxCell id="s6" value="&lt;b&gt;6.&lt;/b&gt; Kopia transfere les donnees vers MinIO&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Deduplication + Compression + Chiffrement&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="450" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Step 7 -->
+        <mxCell id="s7" value="&lt;b&gt;7.&lt;/b&gt; DataUpload → Completed&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;VolumeSnapshot temporaire supprime&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="530" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Step 8 -->
+        <mxCell id="s8" value="&lt;b&gt;8.&lt;/b&gt; Backup → Completed ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="225" y="610" width="300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="a12" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a23" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a34" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a45" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a56" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a67" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s6" target="s7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a78" style="endArrow=block;endFill=1;strokeWidth=2;" edge="1" parent="1" source="s7" target="s8"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Side labels -->
+        <mxCell id="label_velero" value="Velero" style="text;html=1;fontSize=11;fontStyle=2;fontColor=#d6b656;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="185" y="280" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="label_kopia" value="Kopia" style="text;html=1;fontSize=11;fontStyle=2;fontColor=#9673a6;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="185" y="450" width="50" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
