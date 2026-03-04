@@ -11,7 +11,6 @@ HELM_RELEASE="${HELM_RELEASE:-velero}"
 HELM_REPO_URL="https://vmware-tanzu.github.io/helm-charts"
 CHART_VERSION="${CHART_VERSION:-11.4.0}"   # Velero 1.17.1 — VGDP (Generic Data Path)
 CREDENTIALS_FILE="${CREDENTIALS_FILE:-$(dirname "$0")/credentials}"
-CA_CERT_FILE="${CA_CERT_FILE:-$(dirname "$0")/ca.crt}"
 VALUES_FILE="${VALUES_FILE:-$(dirname "$0")/values.yaml}"
 
 # --- Couleurs ---
@@ -30,7 +29,6 @@ check_prerequisites() {
   done
 
   [ -f "${CREDENTIALS_FILE}" ] || error "Fichier credentials introuvable : ${CREDENTIALS_FILE}"
-  [ -f "${CA_CERT_FILE}" ]     || error "Fichier CA introuvable : ${CA_CERT_FILE}"
   [ -f "${VALUES_FILE}" ]      || error "Fichier values.yaml introuvable : ${VALUES_FILE}"
 
   # Vérifier que le mot de passe a été renseigné
@@ -88,26 +86,14 @@ create_credentials_secret() {
 }
 
 # =============================================================================
-# CA cert — base64 encode pour injection dans le BSL config
-# =============================================================================
-encode_ca_cert() {
-  info "Encodage du certificat CA (chaîne complète)..."
-  base64 < "${CA_CERT_FILE}" | tr -d '\n'
-}
-
-# =============================================================================
 # Installation Helm
 # =============================================================================
 install_velero() {
-  local ca_cert_b64
-  ca_cert_b64="$(encode_ca_cert)"
-
   info "Installation de Velero via Helm (chart version ${CHART_VERSION})..."
   helm upgrade --install "${HELM_RELEASE}" vmware-tanzu/velero \
     --namespace "${VELERO_NAMESPACE}" \
     --version "${CHART_VERSION}" \
     --values "${VALUES_FILE}" \
-    --set "configuration.backupStorageLocation[0].config.caCert=${ca_cert_b64}" \
     --wait \
     --timeout 5m
 }
@@ -148,7 +134,6 @@ main() {
   echo "  Release    : ${HELM_RELEASE}"
   echo "  Chart ver  : ${CHART_VERSION}"
   echo "  MinIO URL  : https://labnousvrminio.d83.tes.local:9000"
-  echo "  CA cert    : ${CA_CERT_FILE}"
   echo "  Credentials: ${CREDENTIALS_FILE}"
   echo "=============================================="
   echo ""
