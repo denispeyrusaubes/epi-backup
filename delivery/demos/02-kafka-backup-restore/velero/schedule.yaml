@@ -1,0 +1,13 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: kafka-schedule
+  namespace: velero
+spec:
+  schedule: "*/15 * * * *"
+  template:
+    includedNamespaces:
+      - kafka-test
+    snapshotMoveData: true
+    storageLocation: default
+    ttl: 720h0m0s

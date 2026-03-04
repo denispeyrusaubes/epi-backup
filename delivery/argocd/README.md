@@ -78,18 +78,18 @@ Le certificat CA est injecte a **deux endroits** dans le BSL, pour deux composan
 
 **Etape 1 — config.caCert dans le manifest :**
 
-Generer la valeur base64 et remplacer `__CA_CERT_B64__` dans `velero-app.yaml` :
+Copier le contenu PEM du certificat CA et remplacer `__CA_CERT_PEM__` dans `velero-app.yaml` :
 ```bash
-base64 < ../install/ca.crt | tr -d '\n'
+cat ../install/ca.crt
 ```
 
 **Etape 2 — objectStorage.caCert apres le premier sync :**
 
 Le chart Helm ne supporte pas ce champ directement. L'injecter via patch :
 ```bash
-CA_B64=$(base64 < ../install/ca.crt | tr -d '\n')
+CA_PEM=$(cat ../install/ca.crt)
 kubectl patch bsl default -n velero --type merge \
-  -p "{\"spec\":{\"objectStorage\":{\"caCert\":\"${CA_B64}\"}}}"
+  -p "{\"spec\":{\"objectStorage\":{\"caCert\":\"${CA_PEM}\"}}}"
 ```
 
 L'Application ArgoCD est configuree avec `ignoreDifferences` + `RespectIgnoreDifferences`

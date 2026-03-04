@@ -41,7 +41,7 @@ spec:
                 region: minio
                 s3ForcePathStyle: "true"
                 s3Url: https://minio.example.com:9000       # ← Adapter a l'URL MinIO
-                caCert: __CA_CERT_B64__                     # ← base64 < ca.crt | tr -d '\n'
+                caCert: __CA_CERT_PEM__                     # ← contenu PEM de ca.crt
 
           volumeSnapshotLocation: []
 

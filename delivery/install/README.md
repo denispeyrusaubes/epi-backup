@@ -74,7 +74,7 @@ Le script effectue dans l'ordre :
 6. Cree le namespace Velero
 7. Cree le secret `velero-credentials` (identifiants MinIO)
 8. Genere le `values.yaml` final avec les parametres de `config.env`
-9. Encode `ca.crt` en base64 et lance `helm upgrade --install` avec injection du caCert
+9. Injecte `ca.crt` et lance `helm upgrade --install` avec le caCert
 10. Attend que le Deployment et le DaemonSet `node-agent` soient prets
 11. Affiche l'etat final
 

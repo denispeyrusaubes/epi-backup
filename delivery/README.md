@@ -152,6 +152,77 @@ propage les VolumeSnapshots vers le **Supervisor Cluster**. La strategie retenue
 
 ---
 
+## Disaster Recovery — Restauration sur un nouveau cluster
+
+En cas de perte totale du cluster, les backups **ne sont pas perdus**. Velero stocke
+l'intégralité des métadonnées et des données dans MinIO. Les objets `Backup` Kubernetes
+sont reconstruits automatiquement depuis le contenu du bucket.
+
+### Procédure
+
+**1. Installer Velero sur le nouveau cluster** en pointant vers le même MinIO/bucket :
+
+```bash
+cd delivery/install
+./install.sh
+```
+
+**2. Attendre que le BSL soit Available** :
+
+```bash
+kubectl get bsl -n velero
+# NAME      PHASE       LAST VALIDATED   AGE   DEFAULT
+# default   Available   30s              60s   true
+```
+
+**3. Lister les backups disponibles** (Velero synchronise automatiquement depuis MinIO, toutes les minutes par défaut) :
+
+```bash
+velero backup get
+# ou
+kubectl get backups -n velero
+```
+
+**4. Inspecter un backup avant restauration** :
+
+```bash
+velero backup describe <nom-du-backup> --details
+velero backup logs <nom-du-backup>
+```
+
+**5. Restaurer** :
+
+```bash
+# Restauration complète
+velero restore create --from-backup <nom-du-backup>
+
+# Restauration d'un namespace spécifique
+velero restore create --from-backup <nom-du-backup> \
+  --include-namespaces <namespace>
+
+# Suivi
+velero restore describe <nom-du-restore>
+```
+
+### Pourquoi ça fonctionne
+
+Velero persiste toutes les informations dans le stockage objet :
+
+```
+bucket: velero-pra
+└── backups/<nom>/
+    ├── velero-backup.json          ← métadonnées complètes du backup
+    ├── <nom>.tar.gz               ← ressources Kubernetes sérialisées
+    ├── <nom>-volumeinfo.json      ← mapping PVC → DataUpload
+    └── <nom>-itemoperations.json  ← suivi des opérations
+```
+
+Quand Velero démarre sur un nouveau cluster et se connecte au même BSL,
+il parcourt le bucket et recrée les objets `Backup` dans le namespace `velero`.
+Aucune donnée du cluster précédent n'est nécessaire.
+
+---
+
 ## Contenu du livrable
 
 | Repertoire | Description |

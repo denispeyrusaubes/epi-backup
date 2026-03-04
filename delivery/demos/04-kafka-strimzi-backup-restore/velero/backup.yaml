@@ -1,0 +1,11 @@
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: kafka-strimzi-backup
+  namespace: velero
+spec:
+  includedNamespaces:
+    - kafka
+  snapshotMoveData: true
+  storageLocation: default
+  ttl: 720h0m0s
