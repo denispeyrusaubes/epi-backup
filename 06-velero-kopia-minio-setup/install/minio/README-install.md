@@ -11,7 +11,7 @@ Guide d'installation pas à pas pour l'environnement client.
 | `install.sh` | Script d'installation principal |
 | `uninstall.sh` | Script de désinstallation |
 | `values.yaml` | Configuration Helm Velero |
-| `credentials` | Identifiants MinIO (access key / secret key) |
+| `credentials.example` | Modèle d'identifiants MinIO (copier en `credentials` et renseigner) |
 | `ca.crt` | Chaîne CA complète pour valider le TLS MinIO |
 | `README.md` | Architecture générale Velero + Kopia VGDP |
 | `README-install.md` | Ce fichier — procédure d'installation |
@@ -97,9 +97,14 @@ kubectl get storageclass | grep vsphere
 
 ## Configuration avant installation
 
-### Étape 1 — Renseigner le mot de passe MinIO
+### Étape 1 — Créer le fichier credentials
 
-Éditer `credentials` et remplacer `CHANGE_ME` par le mot de passe réel :
+Copier le modèle et renseigner le mot de passe réel :
+
+```bash
+cp credentials.example credentials
+# Puis éditer credentials et remplacer CHANGE_ME par le mot de passe MinIO
+```
 
 ```
 [default]

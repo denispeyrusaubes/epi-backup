@@ -8,8 +8,9 @@
 *.tgz
 charts/
 
-# Credentials (ne jamais committer)
+# Credentials (ne jamais committer — utiliser credentials.example comme modèle)
 credentials
+!credentials.example
 ca.crt
 
 # Terraform
