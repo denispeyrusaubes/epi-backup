@@ -44,13 +44,14 @@ if [ -z "${CSI_DRIVER}" ]; then
 fi
 info "Driver CSI détecté : ${CSI_DRIVER}"
 
-# Vérifier si une VSC annotée existe déjà
+# Vérifier si une VSC labellisée existe déjà (Velero 1.17+ utilise un label, pas une annotation)
 EXISTING=$(kubectl get volumesnapshotclass \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.velero\.io/csi-volumesnapshot-class}{"\n"}{end}' \
-  2>/dev/null | grep -E $'\ttrue$' | awk '{print $1}' || true)
+  -l velero.io/csi-volumesnapshot-class=true \
+  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}' \
+  2>/dev/null | xargs || true)
 
 if [ -n "${EXISTING}" ]; then
-  warn "Une VolumeSnapshotClass annotée existe déjà : ${EXISTING}"
+  warn "Une VolumeSnapshotClass labellisée existe déjà : ${EXISTING}"
   warn "Continuer créera ${VSC_NAME} en supplément."
   read -r -p "Continuer quand même ? (oui/non) : " CONFIRM
   [ "${CONFIRM}" = "oui" ] || { echo "Annulé."; exit 0; }
@@ -63,7 +64,7 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: ${VSC_NAME}
-  annotations:
+  labels:
     velero.io/csi-volumesnapshot-class: "true"
 driver: ${CSI_DRIVER}
 deletionPolicy: Retain

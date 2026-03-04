@@ -40,12 +40,14 @@ check_prerequisites() {
   kubectl cluster-info &>/dev/null || error "kubectl n'est pas connecté à un cluster"
 
   # Vérifier que le CSI et la VolumeSnapshotClass sont prêts (prérequis VGDP)
+  # Velero 1.17+ exige un LABEL (pas une annotation) sur la VolumeSnapshotClass
   info "Vérification des prérequis VGDP (CSI VolumeSnapshotClass)..."
   VSC_COUNT=$(kubectl get volumesnapshotclass \
-    -o jsonpath='{.items[?(@.metadata.annotations.velero\.io/csi-volumesnapshot-class=="true")].metadata.name}' \
+    -l velero.io/csi-volumesnapshot-class=true \
+    -o jsonpath='{range .items[*]}{.metadata.name}{end}' \
     2>/dev/null | wc -w | tr -d ' ')
   if [ "${VSC_COUNT}" -eq 0 ]; then
-    warn "Aucune VolumeSnapshotClass avec l'annotation 'velero.io/csi-volumesnapshot-class: true' trouvée."
+    warn "Aucune VolumeSnapshotClass avec le label 'velero.io/csi-volumesnapshot-class: true' trouvée."
     warn "VGDP (snapshotMoveData) ne fonctionnera pas sans cette ressource."
     warn "Créer une VolumeSnapshotClass annotée pour le CSI driver du cluster."
     warn "  Tanzu guest   : driver: csi.vsphere.vmware.com"

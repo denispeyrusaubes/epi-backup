@@ -82,31 +82,31 @@ else
 fi
 
 # =============================================================================
-section "5. VolumeSnapshotClass annotée pour Velero"
+section "5. VolumeSnapshotClass labellisée pour Velero (1.17+)"
 # =============================================================================
+# Velero 1.17+ exige un LABEL velero.io/csi-volumesnapshot-class=true
+# (l'ancienne annotation ne suffit plus)
 VSC_LIST=$(kubectl get volumesnapshotclass \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.velero\.io/csi-volumesnapshot-class}{"\t"}{.deletionPolicy}{"\n"}{end}' \
+  -l velero.io/csi-volumesnapshot-class=true \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.deletionPolicy}{"\n"}{end}' \
   2>/dev/null || echo "")
 
 VSC_OK=""
-while IFS=$'\t' read -r name annotated policy; do
+while IFS=$'\t' read -r name policy; do
   [ -z "$name" ] && continue
-  if [ "$annotated" = "true" ]; then
-    if [ "$policy" = "Retain" ]; then
-      pass "VolumeSnapshotClass '${name}' : annotée + deletionPolicy=Retain"
-      VSC_OK="${name}"
-    else
-      warn "VolumeSnapshotClass '${name}' : annotée mais deletionPolicy=${policy} (Retain recommandé)"
-      VSC_OK="${name}"
-    fi
+  if [ "$policy" = "Retain" ]; then
+    pass "VolumeSnapshotClass '${name}' : labellisée + deletionPolicy=Retain"
+    VSC_OK="${name}"
+  else
+    warn "VolumeSnapshotClass '${name}' : labellisée mais deletionPolicy=${policy} (Retain recommandé)"
+    VSC_OK="${name}"
   fi
 done <<< "${VSC_LIST}"
 
 if [ -z "${VSC_OK}" ]; then
-  fail "Aucune VolumeSnapshotClass avec annotation 'velero.io/csi-volumesnapshot-class: true'"
-  echo "    → Créer une VolumeSnapshotClass annotée pour le driver CSI du cluster :"
-  echo "       Tanzu guest : csi.vsphere.vmware.com"
-  echo "       vSphere classique : csi.vsphere.volume"
+  fail "Aucune VolumeSnapshotClass avec label 'velero.io/csi-volumesnapshot-class: true'"
+  echo "    → Créer une VolumeSnapshotClass labellisée pour le driver CSI du cluster :"
+  echo "       ./create-vsc.sh"
 fi
 
 # =============================================================================

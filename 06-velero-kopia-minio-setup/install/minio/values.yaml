@@ -5,8 +5,8 @@
 # PRÉREQUIS CÔTÉ CLUSTER (à faire avant helm install) :
 #   1. CSI driver vSphere actif avec support VolumeSnapshot
 #      Tanzu guest : csi.vsphere.vmware.com | vSphere classique : csi.vsphere.volume
-#   2. VolumeSnapshotClass annotée :
-#        velero.io/csi-volumesnapshot-class: "true"
+#   2. VolumeSnapshotClass labellisée (Velero 1.17+) :
+#        label: velero.io/csi-volumesnapshot-class: "true"
 #        deletionPolicy: Retain
 #   3. StorageClass utilisant le driver CSI vSphere
 #   4. Namespace velero créé + secret velero-credentials créé (via install.sh)
@@ -44,7 +44,7 @@ configuration:
   backupStorageLocation:
     - name: default
       provider: aws
-      bucket: velero-backups
+      bucket: velero-pra
       credential:
         name: velero-credentials
         key: cloud
@@ -53,6 +53,7 @@ configuration:
         region: minio
         s3ForcePathStyle: "true"
         s3Url: https://labnousvrminio.d83.tes.local:9000
+        insecureSkipTLSVerify: "true"
         # caCert est lu depuis la ConfigMap velero-ca-cert (créée par install.sh)
         # et injecté via --set-string lors du helm install.
         # Pour mettre à jour le BSL indépendamment : ./update-bsl.sh

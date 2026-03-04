@@ -42,8 +42,8 @@ le contenu réel du volume est transféré vers le stockage objet via **Kopia**.
 │  cluster-scoped                                                 │
 │  ┌──────────────────────────────────────────────┐              │
 │  │  VolumeSnapshotClass                         │              │
-│  │  annotation: velero.io/csi-volumesnapshot-   │              │
-│  │             class: "true"                    │              │
+│  │  label: velero.io/csi-volumesnapshot-         │              │
+│  │         class: "true"                        │              │
 │  │  driver: csi.vsphere.volume (ou ebs.csi...)  │              │
 │  │  deletionPolicy: Retain                      │              │
 │  └──────────────────────────────────────────────┘              │
@@ -167,14 +167,14 @@ kubectl apply -k github.com/kubernetes-csi/external-snapshotter/client/config/cr
 kubectl apply -k github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/snapshot-controller
 ```
 
-### 3. VolumeSnapshotClass annotée pour Velero
+### 3. VolumeSnapshotClass labellisée pour Velero (1.17+)
 
 ```yaml
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: <csi-driver>-vsc
-  annotations:
+  labels:
     velero.io/csi-volumesnapshot-class: "true"   # ← OBLIGATOIRE pour VGDP
 driver: csi.vsphere.volume                        # adapter selon le cluster
 deletionPolicy: Retain                            # Retain = Velero gère la suppression

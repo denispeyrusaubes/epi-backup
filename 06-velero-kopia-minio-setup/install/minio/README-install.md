@@ -87,7 +87,7 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: vsphere-vsc
-  annotations:
+  labels:
     velero.io/csi-volumesnapshot-class: "true"
 driver: csi.vsphere.vmware.com   # ou csi.vsphere.volume selon le cluster
 deletionPolicy: Retain
@@ -228,8 +228,8 @@ kubectl logs daemonset/node-agent -n velero | grep -i "error\|upload"
 kubectl get datauploads -n velero -o yaml
 ```
 
-Cause fréquente : VolumeSnapshotClass manquante ou non annotée
-(`velero.io/csi-volumesnapshot-class: "true"`).
+Cause fréquente : VolumeSnapshotClass manquante ou sans le label
+`velero.io/csi-volumesnapshot-class: "true"` (Velero 1.17+ exige un label, pas une annotation).
 
 ### PVC non sauvegardé (skippé silencieusement)
 
