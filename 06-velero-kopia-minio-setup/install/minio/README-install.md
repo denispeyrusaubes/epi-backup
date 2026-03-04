@@ -10,6 +10,8 @@ Guide d'installation pas à pas pour l'environnement client.
 |---------|------|
 | `install.sh` | Script d'installation principal |
 | `uninstall.sh` | Script de désinstallation |
+| `create-vsc.sh` | Création de la VolumeSnapshotClass Velero (détection auto du driver CSI) |
+| `check-prerequisites.sh` | Vérification des prérequis cluster |
 | `values.yaml` | Configuration Helm Velero |
 | `credentials.example` | Modèle d'identifiants MinIO (copier en `credentials` et renseigner) |
 | `ca.crt` | Chaîne CA complète pour valider le TLS MinIO |
@@ -33,9 +35,16 @@ Les sections suivantes détaillent chaque contrôle effectué par le script.
 
 ### 1. CSI driver vSphere actif
 
+Deux variantes possibles selon le type de cluster :
+
+| Variante | Driver CSI |
+|----------|-----------|
+| Tanzu guest cluster (VMware paravirtual) | `csi.vsphere.vmware.com` |
+| vSphere CSI classique (on-premise) | `csi.vsphere.volume` |
+
 ```bash
 kubectl get csidrivers | grep vsphere
-# attendu : csi.vsphere.volume
+# attendu : l'un des deux drivers ci-dessus
 ```
 
 ### 2. CRDs VolumeSnapshot + snapshot-controller
@@ -47,11 +56,13 @@ kubectl get crd | grep snapshot
 #   volumesnapshotcontents.snapshot.storage.k8s.io
 #   volumesnapshotclasses.snapshot.storage.k8s.io
 
-kubectl get pods -n kube-system | grep snapshot-controller
+kubectl get pods -A | grep snapshot-controller
 # attendu : 1/1 Running
 ```
 
-Si absents, installer external-snapshotter :
+Sur Tanzu guest, ces composants sont inclus — pas d'installation nécessaire.
+
+Si absents (cluster non-Tanzu), installer external-snapshotter :
 ```bash
 SNAPSHOTTER_VERSION=v8.2.0
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
@@ -63,14 +74,14 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snaps
 
 ### 3. VolumeSnapshotClass annotée pour Velero
 
-Vérifier qu'une VolumeSnapshotClass avec l'annotation Velero existe :
+Le script `create-vsc.sh` détecte automatiquement le driver CSI et crée la VolumeSnapshotClass :
+
 ```bash
-kubectl get volumesnapshotclass -o jsonpath=\
-'{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.velero\.io/csi-volumesnapshot-class}{"\n"}{end}'
-# attendu : une ligne avec "true"
+chmod +x create-vsc.sh
+./create-vsc.sh
 ```
 
-Si absente, créer (adapter le `driver` à votre cluster) :
+Ou manuellement (adapter le `driver` au cluster) :
 ```yaml
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
@@ -78,17 +89,14 @@ metadata:
   name: vsphere-vsc
   annotations:
     velero.io/csi-volumesnapshot-class: "true"
-driver: csi.vsphere.volume
+driver: csi.vsphere.vmware.com   # ou csi.vsphere.volume selon le cluster
 deletionPolicy: Retain
-```
-```bash
-kubectl apply -f vsphere-vsc.yaml
 ```
 
 ### 4. StorageClass CSI pour les applications
 
 Les PVCs des applications à sauvegarder doivent utiliser une StorageClass
-provisionnée par `csi.vsphere.volume` :
+provisionnée par le driver CSI vSphere :
 ```bash
 kubectl get storageclass | grep vsphere
 ```

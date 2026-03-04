@@ -37,10 +37,20 @@ echo "    Contexte actif : ${CTX}"
 # =============================================================================
 section "2. CSI driver vSphere"
 # =============================================================================
-if kubectl get csidriver csi.vsphere.volume &>/dev/null; then
-  pass "CSI driver csi.vsphere.volume enregistré"
-else
-  fail "CSI driver csi.vsphere.volume absent"
+# Deux noms possibles selon la variante Tanzu :
+#   csi.vsphere.vmware.com  → Tanzu guest cluster (VMware paravirtual CSI)
+#   csi.vsphere.volume      → vSphere CSI classique (on-premise, non-Tanzu)
+VSPHERE_CSI_DRIVER=""
+for drv in csi.vsphere.vmware.com csi.vsphere.volume; do
+  if kubectl get csidriver "$drv" &>/dev/null; then
+    VSPHERE_CSI_DRIVER="$drv"
+    pass "CSI driver vSphere enregistré : ${drv}"
+    break
+  fi
+done
+
+if [ -z "${VSPHERE_CSI_DRIVER}" ]; then
+  fail "Aucun CSI driver vSphere trouvé (csi.vsphere.vmware.com ou csi.vsphere.volume)"
   echo "    → Vérifier que le vSphere CSI driver est installé sur le cluster Tanzu"
 fi
 
@@ -94,7 +104,9 @@ done <<< "${VSC_LIST}"
 
 if [ -z "${VSC_OK}" ]; then
   fail "Aucune VolumeSnapshotClass avec annotation 'velero.io/csi-volumesnapshot-class: true'"
-  echo "    → Créer une VolumeSnapshotClass pour csi.vsphere.volume avec cette annotation"
+  echo "    → Créer une VolumeSnapshotClass annotée pour le driver CSI du cluster :"
+  echo "       Tanzu guest : csi.vsphere.vmware.com"
+  echo "       vSphere classique : csi.vsphere.volume"
 fi
 
 # =============================================================================

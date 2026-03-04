@@ -47,7 +47,9 @@ check_prerequisites() {
   if [ "${VSC_COUNT}" -eq 0 ]; then
     warn "Aucune VolumeSnapshotClass avec l'annotation 'velero.io/csi-volumesnapshot-class: true' trouvée."
     warn "VGDP (snapshotMoveData) ne fonctionnera pas sans cette ressource."
-    warn "Créer une VolumeSnapshotClass annotée pour le CSI driver du cluster (ex: csi.vsphere.volume)."
+    warn "Créer une VolumeSnapshotClass annotée pour le CSI driver du cluster."
+    warn "  Tanzu guest   : driver: csi.vsphere.vmware.com"
+    warn "  vSphere classique : driver: csi.vsphere.volume"
     read -r -p "Continuer quand même ? (oui/non) : " CONFIRM
     [ "${CONFIRM}" = "oui" ] || { echo "Annulé."; exit 0; }
   else
