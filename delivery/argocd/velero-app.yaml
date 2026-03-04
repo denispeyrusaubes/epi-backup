@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://vmware-tanzu.github.io/helm-charts
+    chart: velero
+    targetRevision: 11.4.0
+    helm:
+      valuesObject:
+        image:
+          repository: velero/velero
+          tag: v1.17.1
+          pullPolicy: IfNotPresent
+
+        initContainers:
+          - name: velero-plugin-for-aws
+            image: velero/velero-plugin-for-aws:v1.13.1
+            imagePullPolicy: IfNotPresent
+            volumeMounts:
+              - mountPath: /target
+                name: plugins
+
+        configuration:
+          uploaderType: kopia
+          defaultVolumesToFsBackup: false
+          features: EnableCSI
+
+          backupStorageLocation:
+            - name: default
+              provider: aws
+              bucket: velero-pra # ← Adapter au bucket MinIO
+              credential:
+                name: velero-credentials
+                key: cloud
+              default: true
+              config:
+                region: minio
+                s3ForcePathStyle: "true"
+                s3Url: https://minio.example.com:9000   # ← Adapter a l'URL MinIO
+                # caCert : encoder ca.crt en base64 et patcher le BSL apres le premier sync
+
+          volumeSnapshotLocation: []
+
+        credentials:
+          useSecret: true
+          existingSecret: velero-credentials
+
+        deployNodeAgent: true
+
+        nodeAgent:
+          podVolumePath: /var/lib/kubelet/pods
+          privileged: false
+          resources: {}
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false
+
+        upgradeCRDs: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

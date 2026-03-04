@@ -2,14 +2,19 @@
 # Velero Helm values — Kopia + MinIO (Tanzu/vSphere) — VGDP (Generic Data Path)
 # Chart : vmware-tanzu/velero  v11.4.0  →  Velero 1.17.1
 # =============================================================================
-# PRÉREQUIS CÔTÉ CLUSTER (à faire avant helm install) :
+# Ce fichier contient des placeholders remplaces par install.sh :
+#   __MINIO_BUCKET__       → valeur de MINIO_BUCKET dans config.env
+#   __MINIO_REGION__       → valeur de MINIO_REGION dans config.env
+#   __MINIO_URL__          → valeur de MINIO_URL dans config.env
+#
+# PREREQUIS COTE CLUSTER (a faire avant helm install) :
 #   1. CSI driver vSphere actif avec support VolumeSnapshot
-#      Tanzu guest : csi.vsphere.vmware.com | vSphere classique : csi.vsphere.volume
-#   2. VolumeSnapshotClass labellisée (Velero 1.17+) :
+#      Tanzu guest : csi.vsphere.vmware.com
+#   2. VolumeSnapshotClass labellisee (Velero 1.17+) :
 #        label: velero.io/csi-volumesnapshot-class: "true"
-#        deletionPolicy: Retain
+#        deletionPolicy: Delete (Tanzu guest)
 #   3. StorageClass utilisant le driver CSI vSphere
-#   4. Namespace velero créé + secret velero-credentials (via install.sh)
+#   4. Namespace velero cree + secret velero-credentials (via install.sh)
 # =============================================================================
 
 image:
@@ -30,11 +35,11 @@ initContainers:
 # Configuration principale
 # -----------------------------------------------------------------------------
 configuration:
-  # Kopia comme moteur de transfert des données (VGDP data mover)
+  # Kopia comme moteur de transfert des donnees (VGDP data mover)
   uploaderType: kopia
 
-  # Désactiver le file-system backup (ancienne approche PodVolumeBackup/Restore)
-  # Les PVCs sont sauvegardés via CSI VolumeSnapshot + data mover (VGDP)
+  # Desactiver le file-system backup (ancienne approche PodVolumeBackup/Restore)
+  # Les PVCs sont sauvegardes via CSI VolumeSnapshot + data mover (VGDP)
   defaultVolumesToFsBackup: false
 
   # Activer le plugin CSI de Velero (requis pour VGDP avec snapshotMoveData: true)
@@ -44,26 +49,24 @@ configuration:
   backupStorageLocation:
     - name: default
       provider: aws
-      bucket: velero-pra
+      bucket: __MINIO_BUCKET__
       credential:
         name: velero-credentials
         key: cloud
       default: true
       config:
-        region: minio
+        region: __MINIO_REGION__
         s3ForcePathStyle: "true"
-        s3Url: https://labnousvrminio.d83.tes.local:9000
-        insecureSkipTLSVerify: "true"
-        # caCert est lu depuis ca.crt, encodé en base64,
-        # et injecté via --set-string lors du helm install.
-        # Pour mettre à jour la CA, remplacer ca.crt et relancer install.sh
+        s3Url: __MINIO_URL__
+        # caCert est lu depuis ca.crt, encode en base64,
+        # et injecte via --set-string lors du helm install.
 
   # VGDP utilise les CSI VolumeSnapshots (vSphere CSI driver).
-  # Aucun VolumeSnapshotLocation AWS/vSphere nécessaire ici —
-  # la création du snapshot EBS/vSAN est déléguée au CSI via la VolumeSnapshotClass.
+  # Aucun VolumeSnapshotLocation AWS/vSphere necessaire ici —
+  # la creation du snapshot est deleguee au CSI via la VolumeSnapshotClass.
   volumeSnapshotLocation: []
 
-# Utiliser le secret créé par install.sh
+# Utiliser le secret cree par install.sh
 credentials:
   useSecret: true
   existingSecret: velero-credentials
@@ -98,5 +101,5 @@ metrics:
   serviceMonitor:
     enabled: false
 
-# Désactiver le job bitnami/kubectl pour l'upgrade CRDs (tag inexistant sur Docker Hub)
+# Desactiver le job bitnami/kubectl pour l'upgrade CRDs (tag inexistant sur Docker Hub)
 upgradeCRDs: false

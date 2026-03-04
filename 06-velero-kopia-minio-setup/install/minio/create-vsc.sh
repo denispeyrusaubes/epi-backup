@@ -53,8 +53,8 @@ EXISTING=$(kubectl get volumesnapshotclass \
 if [ -n "${EXISTING}" ]; then
   warn "Une VolumeSnapshotClass labellisée existe déjà : ${EXISTING}"
   warn "Continuer créera ${VSC_NAME} en supplément."
-  read -r -p "Continuer quand même ? (oui/non) : " CONFIRM
-  [ "${CONFIRM}" = "oui" ] || { echo "Annulé."; exit 0; }
+  read -r -p "Continuer quand même ? (o/n) : " CONFIRM
+  [ "${CONFIRM}" = "o" ] || { echo "Annulé."; exit 0; }
 fi
 
 # Créer la VolumeSnapshotClass

@@ -3,25 +3,24 @@
 # Configuration VolumeSnapshot pour Tanzu guest cluster (CSI paravirtuel)
 #
 # En Tanzu guest, le CSI driver csi.vsphere.vmware.com propage les
-# VolumeSnapshots vers le Supervisor Cluster. Il NE FAUT PAS créer de
-# VolumeSnapshotClass custom — uniquement labelliser la classe pré-existante
-# "volumesnapshotclass-delete" (créée automatiquement par le TKR).
+# VolumeSnapshots vers le Supervisor Cluster. Il NE FAUT PAS creer de
+# VolumeSnapshotClass custom — uniquement labelliser la classe pre-existante
+# "volumesnapshotclass-delete" (creee automatiquement par le TKR).
 #
 # Ce script :
-#   1. Vérifie les prérequis (CRDs, snapshot-controller, CSI driver)
-#   2. Vérifie que volumesnapshotclass-delete existe
+#   1. Verifie les prerequis (CRDs, snapshot-controller, CSI driver)
+#   2. Verifie que volumesnapshotclass-delete existe
 #   3. Labellise la VSC pour Velero (velero.io/csi-volumesnapshot-class=true)
 #   4. Supprime toute VSC custom incompatible (vsphere-vsc)
-#   5. Valide le résultat
+#   5. Valide le resultat
 #
-# Prérequis infrastructure :
+# Prerequis infrastructure :
 #   - vSphere >= 8.0 Update 2 (Supervisor avec snapshot CRDs)
 #   - TKR >= v1.26.5
 #   - Packages guest : cert-manager, vsphere-pv-csi-webhook
-#     (external-csi-snapshot-webhook non requis sur TKR 1.32+)
 #
 # Usage :
-#   ./setup-tanzu-snapshot.sh
+#   ./setup-guest-snapshot.sh
 # =============================================================================
 set -eo pipefail
 
@@ -47,11 +46,11 @@ echo " CSI paravirtuel → Supervisor Cluster"
 echo "============================================================"
 
 # =============================================================================
-section "1. Connectivité cluster"
+section "1. Connectivite cluster"
 # =============================================================================
 kubectl cluster-info &>/dev/null \
-  && pass "kubectl connecté au cluster" \
-  || { fail "kubectl non connecté"; echo ""; exit 1; }
+  && pass "kubectl connecte au cluster" \
+  || { fail "kubectl non connecte"; echo ""; exit 1; }
 
 CTX=$(kubectl config current-context 2>/dev/null || echo "N/A")
 echo "    Contexte actif : ${CTX}"
@@ -60,10 +59,10 @@ echo "    Contexte actif : ${CTX}"
 section "2. CSI driver paravirtuel"
 # =============================================================================
 if kubectl get csidriver "${EXPECTED_DRIVER}" &>/dev/null; then
-  pass "CSI driver ${EXPECTED_DRIVER} présent"
+  pass "CSI driver ${EXPECTED_DRIVER} present"
 else
-  fail "CSI driver ${EXPECTED_DRIVER} absent — ce script est prévu pour Tanzu guest"
-  echo "    Pour un cluster vSphere classique (csi.vsphere.volume), utiliser create-vsc.sh"
+  fail "CSI driver ${EXPECTED_DRIVER} absent — ce script est prevu pour Tanzu guest"
+  echo "    Pour un cluster vSphere classique (csi.vsphere.volume), adapter le driver."
   echo ""
   exit 1
 fi
@@ -92,11 +91,11 @@ if [ "${SC_PODS}" -gt 0 ]; then
   pass "snapshot-controller Running (${SC_PODS} pod(s))"
 else
   fail "snapshot-controller absent ou non Running"
-  echo "    → Vérifier les packages TKR (vsphere-pv-csi-webhook)"
+  echo "    → Verifier les packages TKR (vsphere-pv-csi-webhook)"
 fi
 
 # =============================================================================
-section "5. VolumeSnapshotClass pré-existante"
+section "5. VolumeSnapshotClass pre-existante"
 # =============================================================================
 if kubectl get volumesnapshotclass "${EXPECTED_VSC}" &>/dev/null; then
   VSC_DRIVER=$(kubectl get volumesnapshotclass "${EXPECTED_VSC}" \
@@ -111,16 +110,16 @@ if kubectl get volumesnapshotclass "${EXPECTED_VSC}" &>/dev/null; then
   fi
 else
   fail "${EXPECTED_VSC} absente"
-  echo "    Cette VolumeSnapshotClass est normalement créée par le TKR."
-  echo "    Prérequis : vSphere >= 8.0u2, TKR >= v1.26.5"
+  echo "    Cette VolumeSnapshotClass est normalement creee par le TKR."
+  echo "    Prerequis : vSphere >= 8.0u2, TKR >= v1.26.5"
   echo "    Packages requis : cert-manager, vsphere-pv-csi-webhook"
 fi
 
-# --- Arrêter si des prérequis manquent ---
+# --- Arreter si des prerequis manquent ---
 if [ "${FAIL}" -gt 0 ]; then
   echo ""
   echo "============================================================"
-  echo -e "${RED} ${FAIL} prérequis manquant(s) — corriger avant de continuer${NC}"
+  echo -e "${RED} ${FAIL} prerequis manquant(s) — corriger avant de continuer${NC}"
   echo "============================================================"
   exit 1
 fi
@@ -132,36 +131,36 @@ CURRENT_LABEL=$(kubectl get volumesnapshotclass "${EXPECTED_VSC}" \
   -o jsonpath='{.metadata.labels.velero\.io/csi-volumesnapshot-class}' 2>/dev/null || true)
 
 if [ "${CURRENT_LABEL}" = "true" ]; then
-  pass "Label velero.io/csi-volumesnapshot-class=true déjà présent"
+  pass "Label velero.io/csi-volumesnapshot-class=true deja present"
 else
   info "Ajout du label velero.io/csi-volumesnapshot-class=true..."
   kubectl label volumesnapshotclass "${EXPECTED_VSC}" \
     velero.io/csi-volumesnapshot-class=true --overwrite
-  pass "Label ajouté sur ${EXPECTED_VSC}"
+  pass "Label ajoute sur ${EXPECTED_VSC}"
 fi
 
 # =============================================================================
-section "7. Vérification des VSC custom potentiellement incompatibles"
+section "7. Verification des VSC custom potentiellement incompatibles"
 # =============================================================================
 if kubectl get volumesnapshotclass "${CUSTOM_VSC_TO_REMOVE}" &>/dev/null 2>&1; then
-  warn "VolumeSnapshotClass custom '${CUSTOM_VSC_TO_REMOVE}' détectée"
+  warn "VolumeSnapshotClass custom '${CUSTOM_VSC_TO_REMOVE}' detectee"
   echo "    En Tanzu guest, les VSC custom avec deletionPolicy=Retain"
-  echo "    ne sont pas supportées par le Supervisor et peuvent provoquer"
+  echo "    ne sont pas supportees par le Supervisor et peuvent provoquer"
   echo "    des erreurs lors des snapshots."
   echo ""
   read -r -p "    Voulez-vous supprimer '${CUSTOM_VSC_TO_REMOVE}' ? (o/n) : " CONFIRM
   if [ "${CONFIRM}" = "o" ]; then
     kubectl delete volumesnapshotclass "${CUSTOM_VSC_TO_REMOVE}"
-    pass "'${CUSTOM_VSC_TO_REMOVE}' supprimée"
+    pass "'${CUSTOM_VSC_TO_REMOVE}' supprimee"
   else
-    warn "'${CUSTOM_VSC_TO_REMOVE}' conservée — vérifier manuellement si elle pose problème"
+    warn "'${CUSTOM_VSC_TO_REMOVE}' conservee — verifier manuellement si elle pose probleme"
   fi
 else
-  pass "Aucune VSC custom '${CUSTOM_VSC_TO_REMOVE}' détectée"
+  pass "Aucune VSC custom '${CUSTOM_VSC_TO_REMOVE}' detectee"
 fi
 
 # =============================================================================
-section "8. État final"
+section "8. Etat final"
 # =============================================================================
 echo ""
 info "VolumeSnapshotClasses actuelles :"
@@ -172,7 +171,7 @@ echo ""
 # =============================================================================
 echo ""
 echo "============================================================"
-echo -e " Résultat : ${GREEN}${PASS} PASS${NC} / ${YELLOW}${WARN} WARN${NC} / ${RED}${FAIL} FAIL${NC}"
+echo -e " Resultat : ${GREEN}${PASS} PASS${NC} / ${YELLOW}${WARN} WARN${NC} / ${RED}${FAIL} FAIL${NC}"
 echo "============================================================"
 echo ""
 
@@ -181,10 +180,10 @@ if [ "${FAIL}" -gt 0 ]; then
   exit 1
 fi
 
-echo -e "${GREEN}Configuration VolumeSnapshot prête pour Velero VGDP.${NC}"
+echo -e "${GREEN}Configuration VolumeSnapshot prete pour Velero VGDP.${NC}"
 echo ""
 echo "Rappels :"
 echo "  - deletionPolicy=Delete est normal en VGDP (snapshot transient)"
 echo "  - Le Supervisor ne supporte PAS deletionPolicy=Retain"
-echo "  - Ne PAS créer de VolumeSnapshotClass custom en Tanzu guest"
+echo "  - Ne PAS creer de VolumeSnapshotClass custom en Tanzu guest"
 echo ""
