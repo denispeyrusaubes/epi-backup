@@ -75,13 +75,7 @@ deployNodeAgent: true
 nodeAgent:
   podVolumePath: /var/lib/kubelet/pods
   privileged: false
-  resources:
-    requests:
-      cpu: 50m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
+  resources: {}
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
