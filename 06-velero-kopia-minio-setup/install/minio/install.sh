@@ -88,13 +88,26 @@ create_credentials_secret() {
 }
 
 # =============================================================================
+# ConfigMap CA cert (source de vérité pour le certificat MinIO)
+# =============================================================================
+create_ca_configmap() {
+  info "Création de la ConfigMap velero-ca-cert (chaîne CA MinIO)..."
+  kubectl create configmap velero-ca-cert \
+    --namespace "${VELERO_NAMESPACE}" \
+    --from-file=ca-bundle.crt="${CA_CERT_FILE}" \
+    --dry-run=client -o yaml | kubectl apply -f -
+}
+
+# =============================================================================
 # Installation Helm
 # =============================================================================
 install_velero() {
-  # Encoder la CA en base64 — info() redirigé vers stderr pour ne pas polluer la capture
-  info "Encodage du certificat CA (chaîne complète)..." >&2
+  # Lire le certificat CA depuis la ConfigMap (source de vérité)
+  info "Lecture du certificat CA depuis la ConfigMap velero-ca-cert..." >&2
   local ca_cert_b64
-  ca_cert_b64="$(base64 < "${CA_CERT_FILE}" | tr -d '\n')"
+  ca_cert_b64=$(kubectl get configmap velero-ca-cert \
+    -n "${VELERO_NAMESPACE}" \
+    -o go-template='{{index .data "ca-bundle.crt"}}' | base64 | tr -d '\n')
 
   info "Installation de Velero via Helm (chart version ${CHART_VERSION})..."
   helm upgrade --install "${HELM_RELEASE}" vmware-tanzu/velero \
@@ -151,6 +164,7 @@ main() {
   add_helm_repo
   create_namespace
   create_credentials_secret
+  create_ca_configmap
   install_velero
   verify_install
 

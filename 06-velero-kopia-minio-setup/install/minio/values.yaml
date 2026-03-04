@@ -53,9 +53,9 @@ configuration:
         region: minio
         s3ForcePathStyle: "true"
         s3Url: https://labnousvrminio.d83.tes.local:9000
-        # caCert (base64, chaîne complète) est injecté via --set lors du helm install
-        # pour ne pas le committer en clair dans ce fichier :
-        #   --set "configuration.backupStorageLocation[0].config.caCert=<base64>"
+        # caCert est lu depuis la ConfigMap velero-ca-cert (créée par install.sh)
+        # et injecté via --set-string lors du helm install.
+        # Pour mettre à jour le BSL indépendamment : ./update-bsl.sh
 
   # VGDP utilise les CSI VolumeSnapshots (vSphere CSI driver).
   # Aucun VolumeSnapshotLocation AWS/vSphere nécessaire ici —
