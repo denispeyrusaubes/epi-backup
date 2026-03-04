@@ -1,0 +1,10 @@
+apiVersion: velero.io/v1
+kind: Restore
+metadata:
+  name: kafka-restore
+  namespace: velero
+spec:
+  backupName: kafka-backup
+  includedNamespaces:
+    - kafka-test
+  restorePVs: true

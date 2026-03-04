@@ -1,0 +1,10 @@
+apiVersion: velero.io/v1
+kind: Restore
+metadata:
+  name: redis-restore
+  namespace: velero
+spec:
+  backupName: redis-backup
+  includedNamespaces:
+    - redis-test
+  restorePVs: true

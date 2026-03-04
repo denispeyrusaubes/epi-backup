@@ -1,0 +1,10 @@
+apiVersion: velero.io/v1
+kind: Restore
+metadata:
+  name: kafka-strimzi-restore
+  namespace: velero
+spec:
+  backupName: kafka-strimzi-backup
+  includedNamespaces:
+    - kafka
+  restorePVs: true
