@@ -67,8 +67,23 @@ sous la section `helm.valuesObject`. Adapter les valeurs suivantes :
 | URL MinIO | `configuration.backupStorageLocation[0].config.s3Url` | URL complete avec port |
 | Region | `configuration.backupStorageLocation[0].config.region` | `minio` (convention) |
 
-**Note :** Le certificat CA (`caCert`) doit etre injecte separement via un patch
-post-sync ou un Job ArgoCD, car il ne doit pas etre stocke en clair dans Git.
+### Certificat CA (caCert)
+
+Le certificat CA doit etre injecte **a deux endroits** dans le BSL :
+
+| Champ | Utilise par | Role |
+|-------|-----------|------|
+| `backupStorageLocation[0].caCert` | Kopia (node-agent) | Valider TLS lors des DataUpload/DataDownload |
+| `backupStorageLocation[0].config.caCert` | Plugin AWS | Valider TLS lors de la verification du BSL |
+
+Generer la valeur base64 :
+```bash
+base64 < ../install/ca.crt | tr -d '\n'
+```
+
+Remplacer les deux occurrences de `__CA_CERT_B64__` dans `velero-app.yaml` par cette valeur.
+
+**Note :** un certificat CA n'est pas un secret — il peut etre stocke dans Git.
 
 ---
 

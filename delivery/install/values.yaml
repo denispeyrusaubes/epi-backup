@@ -58,8 +58,10 @@ configuration:
         region: __MINIO_REGION__
         s3ForcePathStyle: "true"
         s3Url: __MINIO_URL__
-        # caCert est lu depuis ca.crt, encode en base64,
-        # et injecte via --set-string lors du helm install.
+        # caCert (config) : utilise par le plugin AWS pour valider le BSL
+        # Injecte via --set-string lors du helm install (voir install.sh)
+    # caCert (objectStorage) : utilise par Kopia (node-agent) pour les DataUpload/Download
+    # Les deux sont injectes via --set-string depuis ca.crt (voir install.sh)
 
   # VGDP utilise les CSI VolumeSnapshots (vSphere CSI driver).
   # Aucun VolumeSnapshotLocation AWS/vSphere necessaire ici —

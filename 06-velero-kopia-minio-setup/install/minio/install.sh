@@ -103,6 +103,7 @@ install_velero() {
     --namespace "${VELERO_NAMESPACE}" \
     --version "${CHART_VERSION}" \
     --values "${VALUES_FILE}" \
+    --set-string "configuration.backupStorageLocation[0].caCert=${ca_cert_b64}" \
     --set-string "configuration.backupStorageLocation[0].config.caCert=${ca_cert_b64}" \
     --wait \
     --timeout 5m
