@@ -149,3 +149,11 @@ kubectl logs deployment/velero -n velero | grep "skipped\|snapshot\|no applicabl
 ```
 
 Cause frequente : `features: EnableCSI` absent dans `values.yaml`.
+
+### DataUpload echoue avec `mkdir /udmrepo: permission denied`
+
+Le node-agent (Kopia) a besoin d'ecrire dans `/udmrepo` pour son cache local.
+En mode `privileged: false`, ce repertoire n'existe pas dans le conteneur.
+
+**Solution** : monter un `emptyDir` sur `/udmrepo` dans la configuration du node-agent
+(deja configure dans `values.yaml` via `extraVolumes` / `extraVolumeMounts`).
