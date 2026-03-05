@@ -15,11 +15,19 @@ Valider que les données stockées dans les PV d'un broker Kafka sont correcteme
 ## 1. Déploiement
 
 ```bash
-# Avec la StorageClass par défaut
-helm install kafka-test ./chart/kafka-test
+helm upgrade -i kafka-test ./chart/kafka-test \
+  -n kafka-test --create-namespace \
+  --set storageClass="kubernetes-gold-storage-policy"
 
-# Avec une StorageClass spécifique
-helm install kafka-test ./chart/kafka-test --set storageClass=gp3
+# Appliquer les Pod Security Standards
+kubectl label namespace kafka-test \
+  pod-security.kubernetes.io/enforce=baseline \
+  pod-security.kubernetes.io/enforce-version=latest \
+  pod-security.kubernetes.io/warn=baseline \
+  pod-security.kubernetes.io/warn-version=latest \
+  pod-security.kubernetes.io/audit=baseline \
+  pod-security.kubernetes.io/audit-version=latest \
+  --overwrite
 
 # Vérifier que le pod est prêt
 kubectl get pods -n kafka-test -w

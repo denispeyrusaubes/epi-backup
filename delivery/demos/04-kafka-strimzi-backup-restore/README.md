@@ -41,9 +41,8 @@ chmod +x scripts/install-strimzi.sh
 # Ou manuellement :
 helm repo add strimzi https://strimzi.io/charts/
 helm repo update
-helm install strimzi-operator strimzi/strimzi-kafka-operator \
-  --namespace strimzi \
-  --create-namespace \
+helm upgrade -i strimzi-operator strimzi/strimzi-kafka-operator \
+  -n strimzi --create-namespace \
   --version 0.47.0 \
   --set watchNamespaces="{strimzi,kafka}" \
   --wait --timeout 120s
@@ -56,7 +55,17 @@ kubectl get pods -n strimzi
 
 ```bash
 # Créer le namespace
-kubectl apply -f manifests/00-namespace.yaml
+kubectl create namespace kafka --dry-run=client -o yaml | kubectl apply -f -
+
+# Appliquer les Pod Security Standards
+kubectl label namespace kafka \
+  pod-security.kubernetes.io/enforce=baseline \
+  pod-security.kubernetes.io/enforce-version=latest \
+  pod-security.kubernetes.io/warn=baseline \
+  pod-security.kubernetes.io/warn-version=latest \
+  pod-security.kubernetes.io/audit=baseline \
+  pod-security.kubernetes.io/audit-version=latest \
+  --overwrite
 
 # Déployer le node pool puis le cluster
 kubectl apply -f manifests/01-kafka-node-pool.yaml

@@ -14,9 +14,8 @@ helm repo update strimzi
 
 echo ""
 echo "Installation de l'opérateur dans le namespace '${NAMESPACE}'..."
-helm install strimzi-operator strimzi/strimzi-kafka-operator \
-  --namespace "${NAMESPACE}" \
-  --create-namespace \
+helm upgrade -i strimzi-operator strimzi/strimzi-kafka-operator \
+  -n "${NAMESPACE}" --create-namespace \
   --version "${STRIMZI_VERSION}" \
   --set watchNamespaces="{${NAMESPACE},kafka}" \
   --wait \

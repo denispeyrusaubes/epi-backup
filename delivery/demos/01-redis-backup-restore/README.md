@@ -19,11 +19,19 @@ Redis stocke ses données en mémoire et les écrit sur disque périodiquement (
 ## 1. Déploiement
 
 ```bash
-# Avec la StorageClass par défaut
-helm install redis-test ./chart/redis-test
+helm upgrade -i redis-test ./chart/redis-test \
+  -n redis-test --create-namespace \
+  --set storageClass="kubernetes-gold-storage-policy"
 
-# Avec une StorageClass spécifique
-helm install redis-test ./chart/redis-test --set storageClass=gp3
+# Appliquer les Pod Security Standards
+kubectl label namespace redis-test \
+  pod-security.kubernetes.io/enforce=baseline \
+  pod-security.kubernetes.io/enforce-version=latest \
+  pod-security.kubernetes.io/warn=baseline \
+  pod-security.kubernetes.io/warn-version=latest \
+  pod-security.kubernetes.io/audit=baseline \
+  pod-security.kubernetes.io/audit-version=latest \
+  --overwrite
 
 # Vérifier que le pod est prêt
 kubectl get pods -n redis-test -w

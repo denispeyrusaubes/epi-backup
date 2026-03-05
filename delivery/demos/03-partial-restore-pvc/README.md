@@ -36,11 +36,19 @@ Valider que Velero peut restaurer uniquement les données (PV/PVC) sans restaure
 ## 1. Déploiement
 
 ```bash
-# Déployer Redis via le chart du test 01
-helm install redis-test ../01-redis-backup-restore/chart/redis-test
+helm upgrade -i redis-test ../01-redis-backup-restore/chart/redis-test \
+  -n redis-test --create-namespace \
+  --set storageClass="kubernetes-gold-storage-policy"
 
-# Avec une StorageClass spécifique
-helm install redis-test ../01-redis-backup-restore/chart/redis-test --set storageClass=gp3
+# Appliquer les Pod Security Standards
+kubectl label namespace redis-test \
+  pod-security.kubernetes.io/enforce=baseline \
+  pod-security.kubernetes.io/enforce-version=latest \
+  pod-security.kubernetes.io/warn=baseline \
+  pod-security.kubernetes.io/warn-version=latest \
+  pod-security.kubernetes.io/audit=baseline \
+  pod-security.kubernetes.io/audit-version=latest \
+  --overwrite
 
 # Attendre que le pod soit prêt
 kubectl get pods -n redis-test -w
@@ -98,7 +106,9 @@ Ensuite, redéployer l'application via Helm (simule un pipeline CI/CD) :
 
 ```bash
 # Redéployer Redis — Helm réutilise le PVC existant
-helm install redis-test ../01-redis-backup-restore/chart/redis-test
+helm upgrade -i redis-test ../01-redis-backup-restore/chart/redis-test \
+  -n redis-test --create-namespace \
+  --set storageClass="kubernetes-gold-storage-policy"
 
 # Attendre que le pod soit prêt
 kubectl get pods -n redis-test -w
@@ -130,7 +140,7 @@ Quand Velero restaure le PVC avec ce nom, puis que Helm recrée le StatefulSet, 
 ### Ordre des opérations
 
 1. `velero restore` : restaure le namespace (s'il n'existe plus), le PV (depuis le snapshot EBS) et le PVC (lié au PV)
-2. `helm install` : crée le StatefulSet → le StatefulSet trouve le PVC existant → le pod monte le PV avec les données
+2. `helm upgrade -i` : crée le StatefulSet → le StatefulSet trouve le PVC existant → le pod monte le PV avec les données
 
 ### Restauration du namespace
 
@@ -140,4 +150,4 @@ L'option `--include-resources` filtre les ressources restaurées, mais Velero re
 
 - Le **nom du release Helm** doit être identique à celui utilisé lors du backup (ici `redis-test`), sinon les noms de PVC ne correspondront pas
 - Le `BGSAVE` est indispensable avant le backup : Redis étant in-memory, sans flush sur disque le snapshot PV sera vide
-- Si la `StorageClass` du cluster cible diffère, il faudra utiliser `--set storageClass=xxx` lors du `helm install` et potentiellement un `ConfigMap` de mapping dans Velero
+- Si la `StorageClass` du cluster cible diffère, il faudra adapter `--set storageClass=...` lors du `helm upgrade -i` et potentiellement un `ConfigMap` de mapping dans Velero
