@@ -82,6 +82,13 @@ nodeAgent:
   podVolumePath: /var/lib/kubelet/pods
   privileged: false
   resources: {}
+  # SecurityContext du pod node-agent — fsGroup requis pour que l'emptyDir /udmrepo
+  # soit accessible en ecriture par l'UID 1001 (Kopia)
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
   # Volume pour le cache Kopia (/udmrepo) — evite "mkdir /udmrepo: permission denied"
   extraVolumes:
     - name: udmrepo

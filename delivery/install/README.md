@@ -155,5 +155,23 @@ Cause frequente : `features: EnableCSI` absent dans `values.yaml`.
 Le node-agent (Kopia) a besoin d'ecrire dans `/udmrepo` pour son cache local.
 En mode `privileged: false`, ce repertoire n'existe pas dans le conteneur.
 
-**Solution** : monter un `emptyDir` sur `/udmrepo` dans la configuration du node-agent
-(deja configure dans `values.yaml` via `extraVolumes` / `extraVolumeMounts`).
+**Solution** : monter un `emptyDir` sur `/udmrepo` et definir `fsGroup` dans le
+`podSecurityContext` du node-agent pour que le volume soit accessible en ecriture :
+
+```yaml
+nodeAgent:
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  extraVolumes:
+    - name: udmrepo
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: udmrepo
+      mountPath: /udmrepo
+```
+
+**Note** : le `podSecurityContext` top-level s'applique au Deployment velero, pas au
+DaemonSet node-agent. Il faut le definir dans `nodeAgent.podSecurityContext`.
